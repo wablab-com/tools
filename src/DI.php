@@ -11,24 +11,25 @@ class DI implements \WabLab\Tools\Contracts\DI
     public function make(string $className, array $constructorArguments = [])
     {
         $newObjArguments = [];
-        $className = $this->map[$className] ?? $className;
-        $class = new \ReflectionClass($className);
+        $class = new \ReflectionClass($this->getMappedClass($className));
         $constructor = $class->getConstructor();
-        $parameters = $constructor->getParameters(); /**@var $parameter \ReflectionParameter*/
-        foreach($parameters as $parameter) {
-            if( !isset($constructorArguments[$parameter->getName()]) ) {
-                $parameterClass = $parameter->getClass();
-                if($parameterClass) {
-                    if(!$parameter->allowsNull()) {
-                        $newObjArguments[$parameter->getName()] = $this->make('\\'.$parameterClass->getName());
+        if($constructor) {
+            $parameters = $constructor->getParameters(); /**@var $parameter \ReflectionParameter*/
+            foreach($parameters as $parameter) {
+                if( !isset($constructorArguments[$parameter->getName()]) ) {
+                    $parameterClass = $parameter->getClass();
+                    if($parameterClass) {
+                        if(!$parameter->allowsNull()) {
+                            $newObjArguments[$parameter->getName()] = $this->make('\\'.$parameterClass->getName());
+                        } else {
+                            $newObjArguments[$parameter->getName()] = null;
+                        }
                     } else {
                         $newObjArguments[$parameter->getName()] = null;
                     }
                 } else {
-                    $newObjArguments[$parameter->getName()] = null;
+                    $newObjArguments[$parameter->getName()] = $constructorArguments[$parameter->getName()];
                 }
-            } else {
-                $newObjArguments[$parameter->getName()] = $constructorArguments[$parameter->getName()];
             }
         }
 
@@ -36,7 +37,13 @@ class DI implements \WabLab\Tools\Contracts\DI
     }
 
     public function map($left, $right) {
-        $this->map[$left] = $right;
+        $this->map[trim($left, '\\')] = trim($right, '\\');
     }
+
+    public function getMappedClass($className) {
+        $processedClassName = trim($className, '\\');
+        return '\\'.$this->map[$processedClassName] ?? $processedClassName;
+    }
+
 }
 
