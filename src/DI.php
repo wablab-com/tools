@@ -42,7 +42,7 @@ class DI implements \WabLab\Tools\Contracts\DI
 
     public function getMappedClass($className) {
         $processedClassName = trim($className, '\\');
-        return '\\'.$this->map[$processedClassName] ?? $processedClassName;
+        return '\\'.($this->map[$processedClassName] ?? $processedClassName);
     }
 
 }
