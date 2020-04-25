@@ -15,8 +15,12 @@ class DITest extends TestCase
     {
         $di = new DI();
         $obj = $di->make(\DateTime::class);
+        //$obj = $di->make(Test1::class);
 
         $this->assertTrue($obj instanceof \DateTime);
     }
 
 }
+
+
+

@@ -7,11 +7,17 @@ class DI implements \WabLab\Tools\Contracts\DI
 {
 
     protected $map = [];
+    protected $loopDetection = [];
 
     public function make(string $className, array $constructorArguments = [])
     {
         $newObjArguments = [];
-        $class = new \ReflectionClass($this->getMappedClass($className));
+        $mappedClass = $this->getMappedClass($className);
+
+        $this->loopDetectionCheck($mappedClass);
+
+        $this->loopDetection[$mappedClass] = $mappedClass;
+        $class = new \ReflectionClass($mappedClass);
         $constructor = $class->getConstructor();
         if($constructor) {
             $parameters = $constructor->getParameters(); /**@var $parameter \ReflectionParameter*/
@@ -33,7 +39,9 @@ class DI implements \WabLab\Tools\Contracts\DI
             }
         }
 
-        return $class->newInstanceArgs($newObjArguments);
+        $newObj = $class->newInstanceArgs($newObjArguments);
+        unset($this->loopDetection[$mappedClass]);
+        return $newObj;
     }
 
     public function map($left, $right) {
@@ -43,6 +51,16 @@ class DI implements \WabLab\Tools\Contracts\DI
     public function getMappedClass($className) {
         $processedClassName = trim($className, '\\');
         return '\\'.($this->map[$processedClassName] ?? $processedClassName);
+    }
+
+    public function loopDetectionCheck($className) {
+        if(isset($this->loopDetection[$className])) {
+            $loop = array_values($this->loopDetection);
+            $loop[] = $className;
+
+            $this->loopDetection = [];
+            throw new \Exception('New Instance Loop Error: '.implode(' >> ', $loop));
+        }
     }
 
 }
